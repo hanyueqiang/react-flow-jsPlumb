@@ -1,13 +1,3 @@
-html,
-body,
-#root {
-  height: 100%;
-}
-
-body {
-  margin: 0;
-}
-
 body {
   padding: 0;
   margin: 0;
@@ -25,24 +15,21 @@ body {
   cursor: pointer;
 }
 
+
 #visobox {
   position: relative;
-  height: 100%;
-  display: flex;
-}
-.visobox-left {
-  width: 180px;
-  background: #fff;
-  padding: 8px;
+  width: 80%;
+  height: 600px;
+  margin: 20px auto;
 }
 
 #operate {
   position: absolute;
-  right: 10px;
-  top: 10px;
+  right: 20px;
+  top: 20px;
   z-index: 100;
-  padding: 10px;
-  border: 1px solid #ddd;
+  padding: 20px;
+  border: 2px solid #ddd;
   background-color: #eee;
 }
 
@@ -60,10 +47,6 @@ body {
   text-align: center;
   color: #eee;
 }
-.operate-item {
-  text-align: center;
-  margin-bottom: 8px;
-}
 
 #operate .operate-item button {
   width: 100%;
@@ -78,7 +61,7 @@ body {
   overflow: hidden;
   width: 100%;
   height: 100%;
-  background-image: url(./assets/grid.jpeg);
+  background-image: url(./images/grid.jpeg);
   background-repeat: repeat;
   user-select: none;
 }
@@ -148,6 +131,7 @@ body {
   display: none;
 }
 
+
 #diagramContainer .viso-close {
   position: absolute;
   right: 0;
@@ -158,7 +142,7 @@ body {
   height: 20px;
   font-size: 15px;
   line-height: 20px;
-  font-family: 'Segoe UI', 'Lucida Grande', Helvetica, Arial;
+  font-family: "Segoe UI","Lucida Grande",Helvetica,Arial;
   cursor: pointer;
   color: #666;
 }
@@ -201,7 +185,7 @@ body {
   height: 48px;
   font-size: 0;
   line-height: 0;
-  background: url(./assets/gateway_exclusive.png) no-repeat center center;
+  background: url(./images/gateway_exclusive.png) no-repeat center center;
   background-size: 100% 100%;
 }
 
@@ -210,23 +194,10 @@ body {
   height: 48px;
   font-size: 0;
   line-height: 0;
-  background: url(./assets/gateway_parallel.png) no-repeat center center;
+  background: url(./images/gateway_parallel.png) no-repeat center center;
   background-size: 100% 100%;
 }
 
 #diagramContainer .diagram-item.select {
   background-color: rgb(20, 85, 85);
-}
-.visobox-right {
-  width: 260px;
-  padding: 8px;
-  background: #fff;
-  border-left: 1px solid #ccc;
-}
-.right-types {
-  margin-bottom: 8px;
-  color: #08979c;
-  font-size: 16px;
-  border-bottom: 1px solid #ccc;
-  text-align: center;
 }

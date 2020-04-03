@@ -1,6 +1,5 @@
-
 // ref: https://umijs.org/config/
-import { resolve } from "path";
+import { resolve } from 'path';
 export default {
   treeShaking: true,
   hash: true, // 生成hash文件名
@@ -15,32 +14,38 @@ export default {
   // ],
   plugins: [
     // ref: https://umijs.org/plugin/umi-plugin-react.html
-    ['umi-plugin-react', {
-      antd: true,
-      dva: true,
-      dynamicImport: { webpackChunkName: true },
-      title: 'app-template',
-      dll: true,
-      routes: {
-        exclude: [
-          /models\//,
-          /services\//,
-          /model\.(t|j)sx?$/,
-          /service\.(t|j)sx?$/,
-          /components\//,
-        ],
+    [
+      'umi-plugin-react',
+      {
+        antd: true,
+        dva: true,
+        dynamicImport: { webpackChunkName: true },
+        title: '流程图',
+        dll: true,
+        dll: {
+          exclude: ['jsplumb-react'],
+        },
+        routes: {
+          exclude: [
+            /models\//,
+            /services\//,
+            /model\.(t|j)sx?$/,
+            /service\.(t|j)sx?$/,
+            /components\//,
+          ],
+        },
       },
-    }],
+    ],
   ],
   alias: {
-    '@components': resolve(__dirname, "./src/components"),
-    '@utils': resolve(__dirname, "./src/utils"),
+    '@components': resolve(__dirname, './src/components'),
+    '@utils': resolve(__dirname, './src/utils'),
   },
   proxy: {
-    "/api": {
-      target: "",
+    '/api': {
+      target: '',
       changeOrigin: true,
-      pathRewrite: { "^/api": "" }
-    }
+      pathRewrite: { '^/api': '' },
+    },
   },
-}
+};
