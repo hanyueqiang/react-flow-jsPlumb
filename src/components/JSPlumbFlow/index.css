@@ -15,7 +15,6 @@ body {
   cursor: pointer;
 }
 
-
 #visobox {
   position: relative;
   width: 80%;
@@ -131,7 +130,6 @@ body {
   display: none;
 }
 
-
 #diagramContainer .viso-close {
   position: absolute;
   right: 0;
@@ -142,7 +140,7 @@ body {
   height: 20px;
   font-size: 15px;
   line-height: 20px;
-  font-family: "Segoe UI","Lucida Grande",Helvetica,Arial;
+  font-family: 'Segoe UI', 'Lucida Grande', Helvetica, Arial;
   cursor: pointer;
   color: #666;
 }

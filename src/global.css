@@ -31,7 +31,7 @@ body {
   display: flex;
 }
 .visobox-left {
-  width: 180px;
+  width: 150px;
   background: #fff;
   padding: 8px;
 }
@@ -74,6 +74,7 @@ body {
 }
 
 #diagramContainer {
+  flex: 1;
   position: relative;
   overflow: hidden;
   width: 100%;
@@ -98,7 +99,7 @@ body {
   justify-content: center;
   width: 80px;
   height: 80px;
-  border: 1px solid #ddd;
+  border: 2px solid #40affe;
   font-size: 12px;
   color: #eee;
   background-color: rgb(9, 116, 116);
@@ -111,7 +112,7 @@ body {
   height: 100%;
   border: none;
   text-align: center;
-  color: #eee;
+  color: #333;
   background: none;
 }
 
@@ -218,7 +219,7 @@ body {
   background-color: rgb(20, 85, 85);
 }
 .visobox-right {
-  width: 260px;
+  width: 220px;
   padding: 8px;
   background: #fff;
   border-left: 1px solid #ccc;
@@ -229,4 +230,22 @@ body {
   font-size: 16px;
   border-bottom: 1px solid #ccc;
   text-align: center;
+}
+.drag-item-type1,
+#diagramContainer .viso-item-type1 {
+  background-color: rgb(120, 220, 107);
+  color: #333;
+}
+.drag-item-type2,
+#diagramContainer .viso-item-type2 {
+  background-color: rgb(220, 107, 107);
+  color: #333;
+}
+.drag-item-type3,
+#diagramContainer .viso-item-type3 {
+  background-color: rgb(107, 171, 220);
+  color: #333;
+}
+.right-types-item {
+  margin-bottom: 8px;
 }

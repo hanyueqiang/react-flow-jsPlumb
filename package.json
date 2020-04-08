@@ -13,6 +13,8 @@
     "jsplumb": "^2.13.0",
     "jsplumb-react": "^0.0.27",
     "react": "^16.8.6",
+    "react-dnd": "^10.0.2",
+    "react-dnd-html5-backend": "^10.0.2",
     "react-dom": "^16.8.6",
     "umi-request": "^1.2.14",
     "uuid": "^7.0.3"

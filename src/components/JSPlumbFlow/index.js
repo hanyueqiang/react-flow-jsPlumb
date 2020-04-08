@@ -1,9 +1,13 @@
 import React, { Component } from 'react';
-import { Form, Select, Input, Modal, Button, Tag } from 'antd';
+import { Form, Select, Input, Modal, Button, message } from 'antd';
+import { DndProvider } from 'react-dnd';
+import Backend from 'react-dnd-html5-backend';
 import { v4 as uuidv4 } from 'uuid';
+import DragComponent from '../dragComponent';
 import 'jsplumb';
 
-import './data/data2';
+// import './data/data2';
+localStorage.setItem('visoData', '{"nodeData":[],"connectionData":[]}');
 // import './index.css';
 // import 'antd/dist/antd.css';
 
@@ -78,12 +82,15 @@ const TypeClassName = {
   exclusiveGateway: 'viso-gateway-exclusive',
   parallelGateway: 'viso-gateway-parallel',
   userTask: 'viso-task',
+  type1: 'viso-item-type1',
+  type2: 'viso-item-type2',
+  type3: 'viso-item-type3',
 };
 
 // 分支条件存储
 const ConditionCache = {};
 
-export default class JSPlumbFlow extends Component {
+class Index extends Component {
   // 初始化页面常量、绑定事件方法
   constructor(props) {
     super(props);
@@ -102,7 +109,16 @@ export default class JSPlumbFlow extends Component {
       showEditModal: false,
       // 右侧展示属性
       nodeTypesSource: {},
-      typeBtnList: [], //右侧添加属性btn
+      //右侧添加属性btn
+      typeBtnList: [],
+      // 表单配置弹窗
+      formVisible: false,
+      // 右侧属性节点描述
+      nodeDescription: '',
+      // 结果弹窗 临时使用
+      isShowResult: false,
+      // 输出结果json
+      showResult: '',
     };
   }
 
@@ -123,10 +139,7 @@ export default class JSPlumbFlow extends Component {
       });
 
       // 绑定加载数据的操作数据
-      this.bindLoadData();
-
-      // 绑定添加节点的操作数据-h
-      this.bindAddNodeData();
+      // this.bindLoadData();
 
       // 绑定保存数据的操作数据
       this.bindSaveData();
@@ -236,16 +249,19 @@ export default class JSPlumbFlow extends Component {
   getNodeData() {
     const visoEles = document.querySelectorAll(containerSelector + ' .viso-item');
     const nodeData = [];
-
     for (let i = 0, len = visoEles.length; i < len; i++) {
       const nodeInfo = this.getNodeInfo(visoEles[i]);
 
       if (!nodeInfo.id) {
-        throw new Error('流程图节点必须包含id');
+        message.error('流程图节点必须包含id');
+        return;
+        // throw new Error('流程图节点必须包含id');
       }
 
       if (!nodeInfo.name) {
-        throw new Error('流程图节点必须包含name');
+        message.error('流程图节点必须包含name');
+        return;
+        // throw new Error('流程图节点必须包含name');
       }
 
       nodeData.push({
@@ -254,6 +270,7 @@ export default class JSPlumbFlow extends Component {
         type: nodeInfo.type,
         width: nodeInfo.width,
         height: nodeInfo.height,
+        description: nodeInfo.description, // 节点描述
         x: nodeInfo.x,
         y: nodeInfo.y,
       });
@@ -272,11 +289,11 @@ export default class JSPlumbFlow extends Component {
       ? (eleRead.innerText || eleRead.textContent).replace(/^\s+|\s+$/g, '')
       : '';
     const currentStyle = ele.currentStyle || window.getComputedStyle(ele, null);
-
     return {
       id: id,
       name: name,
       type: ele.getAttribute('data-type'),
+      description: ele.getAttribute('data-description'),
       width: parseInt(currentStyle.width, 10) || 80,
       height: parseInt(currentStyle.height, 10) || 80,
       x: parseInt(currentStyle.left, 10) || 0,
@@ -398,14 +415,13 @@ export default class JSPlumbFlow extends Component {
         styleObj.width = `${info.width}px`;
         styleObj.height = `${info.height}px`;
       }
-      console.log('info.id', info.id);
-
       if (info.type.toLocaleLowerCase().indexOf('task') >= 0) {
         nodeHTML = (
           <div
             key={info.id}
             id={info.id}
             data-id={info.id}
+            data-description={info.description}
             className={`viso-item ${TypeClassName[info.type]}`}
             style={styleObj}
             data-type={info.type}
@@ -427,6 +443,7 @@ export default class JSPlumbFlow extends Component {
             key={info.id}
             id={info.id}
             data-id={info.id}
+            data-description={info.description}
             className={`viso-item ${TypeClassName[info.type]}`}
             style={styleObj}
             data-type={info.type}
@@ -462,21 +479,36 @@ export default class JSPlumbFlow extends Component {
       },
     );
   }
+
+  // 拖拽左侧类型获取位置信息
+  dragEndHandle = (name, type, dragOffset) => {
+    const offsetX = dragOffset ? dragOffset.x : 0;
+    const offsetY = dragOffset ? dragOffset.y : 0;
+    // 150为左侧宽度
+    let dragX = offsetX - 150;
+    // 45为header高度
+    let dragY = offsetY - 45;
+    if (dragX < 0 || dragY < 0) {
+      message.info('请拖拽至区域内！');
+      return;
+    }
+    this.addNodeHandle(name, type, dragX, dragY);
+  };
+
   //添加节点
-  addNodeHandle = () => {
+  addNodeHandle = (name, type, dragX, dragY) => {
     const defData = { connectionData: [], nodeData: [] };
     const storageData = localStorage.getItem('visoData');
     const visoData = storageData ? JSON.parse(storageData) : defData;
     const nodeData = visoData.nodeData;
-
     let obj = {
       id: uuidv4(),
-      name: '',
-      type: 'qwe',
-      width: 80,
-      height: 30,
-      x: 400,
-      y: 20,
+      name,
+      type,
+      width: 90,
+      height: 32,
+      x: dragX,
+      y: dragY,
     };
     nodeData.push(obj);
 
@@ -515,17 +547,11 @@ export default class JSPlumbFlow extends Component {
   }
 
   // 绑定加载数据的操作数据
-  bindLoadData() {
-    document.querySelector('#loadData').addEventListener('click', () => {
-      this.loadDataAndPaint();
-    });
-  }
-  // 绑定添加节点操作数据
-  bindAddNodeData() {
-    document.querySelector('#addNode').addEventListener('click', () => {
-      this.addNodeHandle();
-    });
-  }
+  // bindLoadData() {
+  //   document.querySelector('#loadData').addEventListener('click', () => {
+  //     this.loadDataAndPaint();
+  //   });
+  // }
 
   // 绑定保存数据的操作数据
   bindSaveData() {
@@ -540,6 +566,10 @@ export default class JSPlumbFlow extends Component {
 
       console.log('保存数据', visoData);
       localStorage.setItem('visoData', JSON.stringify(visoData));
+      this.setState({
+        isShowResult: true,
+        showResult: JSON.stringify(visoData),
+      });
     });
   }
 
@@ -581,6 +611,7 @@ export default class JSPlumbFlow extends Component {
     if (obj) {
       this.setState({
         nodeTypesSource: obj,
+        nodeDescription: obj.description || '',
       });
     }
   };
@@ -697,9 +728,59 @@ export default class JSPlumbFlow extends Component {
     });
   };
 
+  // 弹出表单配置弹窗
   addTypesBtn = () => {
     this.setState({
-      typeBtnList: [{ id: 1, name: 'btn1' }],
+      formVisible: true,
+    });
+  };
+
+  // 表单配置取消
+  formConfigCancel = () => {
+    this.setState({
+      formVisible: false,
+    });
+  };
+  // 表单配置保存
+  formConfigOk = () => {
+    console.log('配置保存');
+    this.setState({
+      formVisible: false,
+    });
+  };
+
+  //右侧属性失去焦点保存
+  onBlurChange = id => {
+    console.log(id);
+    const { nodeDescription } = this.state;
+    const defData = { connectionData: [], nodeData: [] };
+    const storageData = localStorage.getItem('visoData');
+    const visoData = storageData ? JSON.parse(storageData) : defData;
+    const nodeData = visoData.nodeData;
+    let obj = nodeData.find(item => item.id === id);
+    if (obj) {
+      obj.description = nodeDescription;
+    }
+    const connectionData = this.getConnectionData();
+    const newVisoData = {
+      nodeData,
+      connectionData,
+    };
+    localStorage.setItem('visoData', JSON.stringify(newVisoData));
+    this.loadDataAndPaint();
+  };
+  // 节点属性change
+  nodeDescriptionChange = e => {
+    console.log(e.target.value);
+    this.setState({
+      nodeDescription: e.target.value,
+    });
+  };
+
+  showResultCancel = () => {
+    this.setState({
+      isShowResult: false,
+      showResult: '',
     });
   };
 
@@ -715,14 +796,16 @@ export default class JSPlumbFlow extends Component {
       <div id="visobox">
         <div className="visobox-left">
           <div className="operate-item">
-            <div className="operate-item">
-              <Button id="addNode" style={{ width: '100%' }}>
-                添加节点
-              </Button>
+            <div>
+              <DndProvider backend={Backend}>
+                <DragComponent name="类型1" type="type1" dragEndHandle={this.dragEndHandle} />
+                <DragComponent name="类型2" type="type2" dragEndHandle={this.dragEndHandle} />
+                <DragComponent name="类型3" type="type3" dragEndHandle={this.dragEndHandle} />
+              </DndProvider>
             </div>
-            <Button id="loadData" style={{ width: '100%' }}>
+            {/* <Button id="loadData" style={{ width: '100%' }}>
               加载数据
-            </Button>
+            </Button> */}
           </div>
           <div className="operate-item">
             <Button id="clearData" style={{ width: '100%' }}>
@@ -735,66 +818,37 @@ export default class JSPlumbFlow extends Component {
             </Button>
           </div>
         </div>
-        {/* <div id="operate">
-          <div className="viso-item viso-start" data-type="start">开始</div>
-          <div className="viso-item viso-gateway" data-type="gateway">条件</div>
-          <div className="viso-item viso-task" data-type="task">任务</div>
-          <div className="viso-item viso-end" data-type="end">结果</div>
-          <hr />
-          <div className="operate-item">
-            <button id="loadData">加载数据</button>
-          </div>
-          <div className="operate-item">
-            <button id="saveData">保存数据</button>
-          </div>
-          <div className="operate-item">
-            <button id="clearData">清除内容</button>
-          </div>
-        </div> */}
         <div id="diagramContainer">{this.state.nodeList}</div>
         <div className="visobox-right">
-          <div className="right-types">字段属性</div>
+          <div className="right-types">节点属性</div>
           {this.state.nodeTypesSource.name ? (
             <div>
-              <div>
-                name:
-                <Input placeholder="请输入" value={this.state.nodeTypesSource.name} disabled />
+              <div className="right-types-item">
+                id:
+                <div> {this.state.nodeTypesSource.id}</div>
               </div>
-              <div>
-                id: <Input placeholder="请输入" value={this.state.nodeTypesSource.id} disabled />
+              <div className="right-types-item">
+                节点类型:
+                <div> {this.state.nodeTypesSource.type}</div>
               </div>
-              <div style={{ marginBottom: 10 }}>
-                url: <Input placeholder="请输入" />
+              <div className="right-types-item">
+                <div>节点名称：</div>
+                <div> {this.state.nodeTypesSource.name}</div>
               </div>
-              <div style={{ marginBottom: 10 }}>
-                nameId: <Input placeholder="请输入" />
+              <div className="right-types-item">
+                description:
+                <Input
+                  placeholder="请输入"
+                  onChange={this.nodeDescriptionChange}
+                  value={this.state.nodeDescription}
+                  onBlur={this.onBlurChange.bind(this, this.state.nodeTypesSource.id)}
+                />
               </div>
-              <div style={{ marginBottom: 10 }}>
-                fileId: <Input placeholder="请输入" />
-              </div>
-              <Button onClick={this.addTypesBtn}>创建btn</Button>
-              {this.state.typeBtnList.length > 0 && (
-                <div>
-                  {this.state.typeBtnList.map(item => {
-                    return (
-                      <div key={item.id} style={{ marginTop: 10 }}>
-                        <Tag color="#2db7f5">btn1</Tag>
-                        <div>
-                          inputType: <Input placeholder="请输入" />
-                        </div>
-                        <div>
-                          inputLabel: <Input placeholder="请输入" />
-                        </div>
-                        <div>
-                          inputValue: <Input placeholder="请输入" />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              <div style={{ marginTop: 15 }}>
-                <Button type="primary">保存</Button>
+              <div className="right-types-item">
+                <div>表单配置</div>
+                <Button onClick={this.addTypesBtn} style={{ width: '100%' }}>
+                  表单配置
+                </Button>
               </div>
             </div>
           ) : (
@@ -823,7 +877,29 @@ export default class JSPlumbFlow extends Component {
             </FormItem>
           </div>
         </Modal>
+        <Modal
+          title="表单配置"
+          width={800}
+          visible={this.state.formVisible}
+          onOk={this.formConfigOk}
+          onCancel={this.formConfigCancel}
+        >
+          <p>按钮配置1</p>
+        </Modal>
+        <Modal
+          title="保存数据"
+          width={800}
+          footer={null}
+          visible={this.state.isShowResult}
+          onCancel={this.showResultCancel}
+        >
+          <p>json格式</p>
+          <div style={{ padding: 8, border: '1px solid #ccc', maxHeight: 300, overflow: 'auto' }}>
+            {this.state.showResult}
+          </div>
+        </Modal>
       </div>
     );
   }
 }
+export default Index;
