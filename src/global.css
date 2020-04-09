@@ -249,3 +249,7 @@ body {
 .right-types-item {
   margin-bottom: 8px;
 }
+.visobox-mid {
+  flex: 1;
+  overflow: auto;
+}

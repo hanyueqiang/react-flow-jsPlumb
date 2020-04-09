@@ -4,6 +4,8 @@ import { DndProvider } from 'react-dnd';
 import Backend from 'react-dnd-html5-backend';
 import { v4 as uuidv4 } from 'uuid';
 import DragComponent from '../dragComponent';
+import RegionConfigForm from './components/regionForm';
+import { getClientHeight } from '@utils';
 import 'jsplumb';
 
 // import './data/data2';
@@ -16,6 +18,7 @@ const FormItem = Form.Item;
 const jsPlumb = window.jsPlumb;
 const containerId = 'diagramContainer';
 const containerSelector = '#' + containerId;
+const clientHeight = getClientHeight() - 47; // 获取浏览器高度
 
 // 是否允许改变流程图的布局（包括大小、连线、节点删除等）
 const canChangeLayout = true;
@@ -119,6 +122,8 @@ class Index extends Component {
       isShowResult: false,
       // 输出结果json
       showResult: '',
+      // 绘图区域设置
+      regionVisible: false,
     };
   }
 
@@ -156,6 +161,9 @@ class Index extends Component {
       // 绑定点击展示数据详情-h
       this.bindShowData();
 
+      // 获取本地缓存是否有宽高配置
+      this.getRegionConfig();
+
       // 允许改变流程图的布局
       if (canChangeLayout) {
         // 绑定删除连接线的操作处理
@@ -169,6 +177,15 @@ class Index extends Component {
       }
     });
   }
+
+  // 获取本地缓存是否有宽高配置
+  getRegionConfig = () => {
+    let regionConfig = window.localStorage.getItem('regionConfig');
+    if (regionConfig) {
+      const { regionWidth, regionHeight } = JSON.parse(regionConfig);
+      this.setRegionConfig(regionWidth, regionHeight);
+    }
+  };
 
   // 设置默认表现
   setDefault(id) {
@@ -784,6 +801,43 @@ class Index extends Component {
     });
   };
 
+  // 点击区域设置事件
+  onRegionHandle = () => {
+    this.setState({
+      regionVisible: true,
+    });
+  };
+
+  // 传入宽高设置 绘图区域
+  setRegionConfig = (width, height) => {
+    const regionDiv = document.getElementById('diagramContainer');
+    if (regionDiv) {
+      regionDiv.style.width = parseInt(width) + 'px';
+      regionDiv.style.height = parseInt(height) + 'px';
+    }
+  };
+
+  onRegionOk = () => {
+    const { form } = this.regionFormRef.props;
+    const { isHeightError, isWidthError } = this.regionFormRef.state;
+    form.validateFields((err, values) => {
+      if (err || isHeightError || isWidthError) {
+        return;
+      }
+      const { regionWidth, regionHeight } = values;
+
+      this.setRegionConfig(regionWidth, regionHeight);
+      window.localStorage.setItem('regionConfig', JSON.stringify(values));
+
+      this.onRegionCancel();
+    });
+  };
+  onRegionCancel = () => {
+    this.setState({
+      regionVisible: false,
+    });
+  };
+
   // DOM渲染
   render() {
     const formItemLayout = {
@@ -794,7 +848,7 @@ class Index extends Component {
     console.log(this.state.nodeTypesSource);
     return (
       <div id="visobox">
-        <div className="visobox-left">
+        <div className="visobox-left" id="visobox-left">
           <div className="operate-item">
             <div>
               <DndProvider backend={Backend}>
@@ -813,13 +867,20 @@ class Index extends Component {
             </Button>
           </div>
           <div className="operate-item">
+            <Button style={{ width: '100%' }} onClick={this.onRegionHandle}>
+              绘图区域设置
+            </Button>
+          </div>
+          <div className="operate-item">
             <Button id="saveData" type="primary" style={{ width: '100%' }}>
               保存数据
             </Button>
           </div>
         </div>
-        <div id="diagramContainer">{this.state.nodeList}</div>
-        <div className="visobox-right">
+        <div className="visobox-mid" style={{ height: `${clientHeight}px` }}>
+          <div id="diagramContainer">{this.state.nodeList}</div>
+        </div>
+        <div className="visobox-right" id="visobox-right">
           <div className="right-types">节点属性</div>
           {this.state.nodeTypesSource.name ? (
             <div>
@@ -897,6 +958,16 @@ class Index extends Component {
           <div style={{ padding: 8, border: '1px solid #ccc', maxHeight: 300, overflow: 'auto' }}>
             {this.state.showResult}
           </div>
+        </Modal>
+        <Modal
+          title="绘图区域设置"
+          width={460}
+          destroyOnClose={true}
+          visible={this.state.regionVisible}
+          onCancel={this.onRegionCancel}
+          onOk={this.onRegionOk}
+        >
+          <RegionConfigForm wrappedComponentRef={formRef => (this.regionFormRef = formRef)} />
         </Modal>
       </div>
     );

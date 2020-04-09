@@ -6,9 +6,7 @@ export default class index extends Component {
   render() {
     return (
       <div className={styles.container}>
-        <div style={{ flex: '1', overflow: 'auto' }}>
-          <JsPlumbFlow />
-        </div>
+        <JsPlumbFlow />
       </div>
     );
   }

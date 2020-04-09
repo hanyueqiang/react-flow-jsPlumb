@@ -1,5 +1,4 @@
 import request from './umiRequest';
+import { getClientHeight, getRegionWidth } from './_';
 
-export {
-  request
-};
+export { request, getClientHeight, getRegionWidth };
