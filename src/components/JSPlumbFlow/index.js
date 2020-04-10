@@ -31,7 +31,7 @@ const commonConfig = {
   isTarget: canChangeLayout,
   // 设置连接点最多可以连接几条线
   // -1不限制，默认限制一条线
-  maxConnections: -1,
+  // maxConnections: -1,
   // 设置锚点位置，按照[target, source]的顺序进行设置
   // 可以有 Bottom Top Right Left四种方位
   // 还可以是BottomLeft BottomRight BottomCenter TopLeft TopRight TopCenter LeftMiddle RightMiddle的组合
@@ -41,7 +41,7 @@ const commonConfig = {
   endpoint: [
     canChangeLayout ? 'Dot' : 'Blank',
     {
-      radius: 4,
+      radius: 6,
     },
   ],
   // 设置端点的样式
