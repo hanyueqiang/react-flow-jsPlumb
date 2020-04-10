@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Form, Select, Input, Modal, Button, message } from 'antd';
+import { Form, Input, Modal, Button, message } from 'antd';
 import { DndProvider } from 'react-dnd';
 import Backend from 'react-dnd-html5-backend';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,7 +11,6 @@ import 'jsplumb';
 // import './data/data2';
 localStorage.setItem('visoData', '{"nodeData":[],"connectionData":[]}');
 // import './index.css';
-// import 'antd/dist/antd.css';
 
 const FormItem = Form.Item;
 
@@ -124,6 +123,10 @@ class Index extends Component {
       showResult: '',
       // 绘图区域设置
       regionVisible: false,
+      // 新建连线配置条件
+      showNewConditionModal: false,
+      // 存储连线状态，新增连线时使用
+      connectInfo: null,
     };
   }
 
@@ -203,6 +206,7 @@ class Index extends Component {
 
   // 给指定节点添加端点
   addEndpoint(id) {
+    console.log('addEndpoint==', id);
     jsPlumb.addEndpoint(id, { anchors: 'Left', uuid: `${id}-anchor-left-middle` }, commonConfig);
     jsPlumb.addEndpoint(id, { anchors: 'Right', uuid: `${id}-anchor-right-middle` }, commonConfig);
     jsPlumb.addEndpoint(id, { anchors: 'Top', uuid: `${id}-anchor-center-top` }, commonConfig);
@@ -272,13 +276,11 @@ class Index extends Component {
       if (!nodeInfo.id) {
         message.error('流程图节点必须包含id');
         return;
-        // throw new Error('流程图节点必须包含id');
       }
 
       if (!nodeInfo.name) {
         message.error('流程图节点必须包含name');
         return;
-        // throw new Error('流程图节点必须包含name');
       }
 
       nodeData.push({
@@ -422,7 +424,6 @@ class Index extends Component {
 
     // 添加节点
     const nodeList = nodeData.map(info => {
-      let nodeHTML;
       let styleObj = {
         position: 'absolute',
         left: `${info.x}px`,
@@ -432,46 +433,22 @@ class Index extends Component {
         styleObj.width = `${info.width}px`;
         styleObj.height = `${info.height}px`;
       }
-      if (info.type.toLocaleLowerCase().indexOf('task') >= 0) {
-        nodeHTML = (
-          <div
-            key={info.id}
-            id={info.id}
-            data-id={info.id}
-            data-description={info.description}
-            className={`viso-item ${TypeClassName[info.type]}`}
-            style={styleObj}
-            data-type={info.type}
-          >
-            <Select defaultValue={info.name}>
-              <Select.Option value="组长审批">组长审批</Select.Option>
-              <Select.Option value="主管审批">主管审批</Select.Option>
-              <Select.Option value="人事审批">人事审批</Select.Option>
-              <Select.Option value="经理审批">经理审批</Select.Option>
-            </Select>
-            <span className="viso-close" style={{ display: canChangeLayout ? 'block' : 'none' }}>
-              &times;
-            </span>
-          </div>
-        );
-      } else {
-        nodeHTML = (
-          <div
-            key={info.id}
-            id={info.id}
-            data-id={info.id}
-            data-description={info.description}
-            className={`viso-item ${TypeClassName[info.type]}`}
-            style={styleObj}
-            data-type={info.type}
-          >
-            <span className="viso-name">{info.name}</span>
-            <span className="viso-close" style={{ display: canChangeLayout ? 'block' : 'none' }}>
-              &times;
-            </span>
-          </div>
-        );
-      }
+      let nodeHTML = (
+        <div
+          key={info.id}
+          id={info.id}
+          data-id={info.id}
+          data-description={info.description}
+          className={`viso-item ${TypeClassName[info.type]}`}
+          style={styleObj}
+          data-type={info.type}
+        >
+          <span className="viso-name">{info.name}</span>
+          <span className="viso-close" style={{ display: canChangeLayout ? 'block' : 'none' }}>
+            &times;
+          </span>
+        </div>
+      );
       return nodeHTML;
     });
 
@@ -486,13 +463,15 @@ class Index extends Component {
         });
 
         // 创建连线
-        connectionData.forEach(info => {
-          if (info.conditionExpression) {
-            ConditionCache[info.source.elementId + ':' + info.target.elementId] =
-              info.conditionExpression;
-          }
-          this.setConnection(info);
-        });
+        if (connectionData.length > 0) {
+          connectionData.forEach(info => {
+            if (info.conditionExpression) {
+              ConditionCache[info.source.elementId + ':' + info.target.elementId] =
+                info.conditionExpression;
+            }
+            this.setConnection(info);
+          });
+        }
       },
     );
   }
@@ -553,15 +532,42 @@ class Index extends Component {
     // 建立连接线之前触发
     // 返回true正常建立连线，返回false取消连接
     jsPlumb.bind('beforeDrop', (info, originalEvent) => {
-      const labelText = window.prompt('请输入连接线的label') || '';
+      // const labelText = window.prompt('请输入连接线的label') || '';
+      this.setState({
+        editModalSourceId: info.sourceId,
+        eiditModalTargetid: info.targetId,
+        connectInfo: info,
+        editModalLabelText: '',
+        editModalCondition: '',
+        showNewConditionModal: true,
+      });
 
-      if (labelText) {
-        info.connection.setLabel(this.getLabelSetInfo(labelText));
-      }
+      // if (labelText) {
+      //   info.connection.setLabel(this.getLabelSetInfo(labelText));
+      // }
 
       return true;
     });
   }
+  // 新增连线ok
+  handleNewConditionOnOK = () => {
+    // this.state.labelOverlay.setLabel(this.state.editModalLabelText || '');
+    this.state.connectInfo.connection.setLabel(
+      this.getLabelSetInfo(
+        this.state.editModalLabelText || '',
+        this.state.connectInfo.sourceId,
+        this.state.connectInfo.targetId,
+      ),
+    );
+    ConditionCache[
+      this.state.editModalSourceId + ':' + this.state.eiditModalTargetid
+    ] = this.state.editModalCondition;
+    this.setState({
+      showNewConditionModal: false,
+      editModalLabelText: '',
+      editModalCondition: '',
+    });
+  };
 
   // 绑定加载数据的操作数据
   // bindLoadData() {
@@ -593,6 +599,10 @@ class Index extends Component {
   // 绑定清除内容的操作数据
   bindClearData() {
     document.querySelector('#clearData').addEventListener('click', () => {
+      // 清空storage数据
+      const defData = { connectionData: [], nodeData: [] };
+      window.localStorage.setItem('visoData', JSON.stringify(defData));
+
       this.clearCont();
     });
   }
@@ -602,10 +612,55 @@ class Index extends Component {
     document.querySelector(containerSelector).addEventListener('click', event => {
       if (this.matchesSelector(event.target, '.viso-close')) {
         const id = event.target.parentNode.getAttribute('id');
-        jsPlumb.remove(id);
+        // jsPlumb.remove(id);
+        // 先存下拖拽后的位置
+        this.saveNodeInfos();
+        // 删除node节点数据
+        this.removeNodeHandle(id);
+        // 右侧属性数据设为空
+        this.setState({
+          nodeTypesSource: {},
+        });
       }
     });
   }
+
+  // 保存下绘图区域位置信息
+  saveNodeInfos = () => {
+    const nodeData = this.getNodeData();
+    const connectionData = this.getConnectionData();
+    const visoData = {
+      nodeData,
+      connectionData,
+    };
+    localStorage.setItem('visoData', JSON.stringify(visoData));
+  };
+
+  // 删除节点操作
+  removeNodeHandle = removeId => {
+    const defData = { connectionData: [], nodeData: [] };
+    const storageData = localStorage.getItem('visoData');
+    const visoData = storageData ? JSON.parse(storageData) : defData;
+    let nodeData = visoData.nodeData;
+    let connectionData = this.getConnectionData();
+    // 移除节点
+    nodeData = nodeData.filter(item => item.id !== removeId);
+    connectionData = connectionData.filter(item => {
+      const sourceId = item.source ? item.source.elementId : '';
+      const targetId = item.target ? item.target.elementId : '';
+      if (sourceId !== removeId && targetId !== removeId) {
+        return item;
+      }
+      return false;
+    });
+
+    const newVisoData = {
+      nodeData,
+      connectionData,
+    };
+    localStorage.setItem('visoData', JSON.stringify(newVisoData));
+    this.loadDataAndPaint();
+  };
 
   // 绑定展示数据详情
   bindShowData() {
@@ -758,6 +813,7 @@ class Index extends Component {
       formVisible: false,
     });
   };
+
   // 表单配置保存
   formConfigOk = () => {
     console.log('配置保存');
@@ -923,6 +979,29 @@ class Index extends Component {
           onOk={this.handleEditModalOnOK}
           onCancel={() => {
             this.setState({ showEditModal: false });
+          }}
+          okText="确认"
+          cancelText="取消"
+        >
+          <div>
+            <FormItem label="配置条件：" colon={false} required={false} {...formItemLayout}>
+              <Input value={this.state.editModalCondition} onChange={this.handleChangeCondition} />
+            </FormItem>
+          </div>
+          <div>
+            <FormItem label="显示文本：" colon={false} required={false} {...formItemLayout}>
+              <Input value={this.state.editModalLabelText} onChange={this.handleChangeLabelText} />
+            </FormItem>
+          </div>
+        </Modal>
+        <Modal
+          width={300}
+          title="新增条件"
+          visible={this.state.showNewConditionModal}
+          destroyOnClose={true}
+          onOk={this.handleNewConditionOnOK}
+          onCancel={() => {
+            this.setState({ showNewConditionModal: false });
           }}
           okText="确认"
           cancelText="取消"
